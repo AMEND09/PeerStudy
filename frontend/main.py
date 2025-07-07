@@ -3,7 +3,7 @@ import requests
 import json
 from datetime import datetime
 
-API_BASE_URL = "http://127.0.0.1:5001/api"
+API_BASE_URL = "http://peerstudy.amend09.hackclub.app/api"
 
 class ChatBubble(ft.Row):
     def __init__(self, author: str, text: str, is_me: bool):
