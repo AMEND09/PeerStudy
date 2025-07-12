@@ -3,7 +3,6 @@ import requests
 import json
 from datetime import datetime, timezone
 
-# API_BASE_URL is now only used if NOT in demo mode
 API_BASE_URL = "http://localhost:5432/api"
 
 class ChatBubble(ft.Row):
@@ -36,7 +35,6 @@ class NoteSharingApp:
         self.page.dark_theme = ft.Theme(color_scheme_seed="indigo")
         self.page.theme_mode = ft.ThemeMode.SYSTEM
         
-        # --- START OF DEMO/TESTING SETUP ---
         self.is_demo_mode = False
         self.test_user = {"username": "testuser", "password": "password123", "user_id": 99}
         self._demo_data = {
@@ -60,7 +58,6 @@ class NoteSharingApp:
                 ]
             }
         }
-        # --- END OF DEMO/TESTING SETUP ---
 
         self.current_group_id = None; self.current_group_name = ""
         self.all_notes = []; self.all_meetups = []
@@ -79,7 +76,6 @@ class NoteSharingApp:
         self.page.go("/login")
 
     def api_call(self, method, endpoint, data=None):
-        # If in demo mode, return hardcoded data without making a real API call
         if self.is_demo_mode:
             print(f"DEMO MODE: Intercepting API call for {method} {endpoint}")
             group_id = self.current_group_id
@@ -94,14 +90,13 @@ class NoteSharingApp:
                 return self._demo_data.get(group_id, {}).get("meetups", []), None
             if method == 'GET' and endpoint.endswith('/chat'):
                 return self._demo_data.get(group_id, {}).get("chat", []), None
-            if method == 'POST': # Simulate all POST requests as successful
+            if method == 'POST': 
                 if endpoint.endswith('/chat') and data:
                     self._demo_data[group_id]["chat"].append({'author': self.test_user['username'], 'text': data['text']})
                 print(f"DEMO MODE: Successfully handled POST to {endpoint}")
                 return {"success": True}, None
-            return [], None # Fallback for any unhandled demo call
+            return [], None 
 
-        # If not in demo mode, proceed with the actual API call
         token = self.page.client_storage.get("auth_token")
         headers = {'Authorization': f'Bearer {token}'} if token else {}
         headers['Content-Type'] = 'application/json'
@@ -119,7 +114,6 @@ class NoteSharingApp:
             return None, error_message
 
     def show_error_dialog(self, message: str):
-        # ... (rest of the code is unchanged)
         error_dialog = ft.AlertDialog(
             modal=True, title=ft.Text("Error"), content=ft.Text(message),
             actions=[ft.TextButton("OK", on_click=self.close_dialog)],
@@ -349,7 +343,6 @@ class NoteSharingApp:
                 self.show_error_dialog("Please enter both username and password.")
                 return
 
-            # Check if the credentials match the hardcoded test user
             if uname == self.test_user["username"] and pword == self.test_user["password"]:
                 print("Test user login detected. Activating demo mode.")
                 self.is_demo_mode = True
@@ -360,7 +353,6 @@ class NoteSharingApp:
                 self.page.go("/dashboard")
                 return
 
-            # If not the test user, attempt a real API call
             result, error = self.api_call('POST', '/login', data={"username": uname, "password": pword})
             if result and 'user_id' in result:
                 self.page.client_storage.set("auth_token", result['access_token'])
@@ -403,7 +395,7 @@ class NoteSharingApp:
     def on_group_click(self, group): self.current_group_id = group['id']; self.current_group_name = group['name']; self.page.go(f"/group/{self.current_group_id}")
     
     def logout(self, e): 
-        self.is_demo_mode = False # IMPORTANT: Reset demo mode on logout
+        self.is_demo_mode = False
         self.page.client_storage.clear()
         self.page.go("/login")
 
@@ -428,11 +420,10 @@ class NoteSharingApp:
             elif self.page.route.startswith("/group/"):
                 parts = self.page.route.strip("/").split("/")
                 self.current_group_id = int(parts[1])
-                # In demo mode, we can look up the name from our hardcoded data
                 if self.is_demo_mode:
                     group_info = next((g for g in self._demo_data["groups"] if g['id'] == self.current_group_id), None)
                     if group_info: self.current_group_name = group_info['name']
-                elif not self.current_group_name or str(self.current_group_id) != parts[1]: # real api call
+                elif not self.current_group_name or str(self.current_group_id) != parts[1]: 
                     group_data, _ = self.api_call('GET', f'/groups/{self.current_group_id}')
                     if group_data: self.current_group_name = group_data.get('name', 'Group')
 
